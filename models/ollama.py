@@ -38,7 +38,7 @@ def prompt_func(data):
 
 
 def main():
-    image_path = Path(__file__).with_name("sample_bank_letter.png")
+    image_path = Path(__file__).parent.parent / "documents" / "sample_bank_letter.png"
     image_b64 = image_file_to_base64(image_path)
 
     chain = prompt_func | llm | StrOutputParser()
