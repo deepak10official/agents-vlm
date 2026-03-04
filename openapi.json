@@ -1,0 +1,217 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+      "title": "Agents VLM API",
+      "description": "API endpoints for document validation agents.",
+      "version": "1.0.0"
+    },
+    "servers": [
+      {
+        "url": "http://host.docker.internal:8000"
+      }
+    ],
+    "paths": {
+      "/health": {
+        "get": {
+          "summary": "Health",
+          "operationId": "health_health_get",
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object",
+                    "title": "Response Health Health Get"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/agents/bbpou-participation/validate": {
+        "post": {
+          "summary": "Validate Bbpou Participation",
+          "operationId": "validate_bbpou_participation_agents_bbpou_participation_validate_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateBBPouRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BBPouParticipation"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "BBPouParticipation": {
+          "type": "object",
+          "title": "BBPouParticipation",
+          "required": [
+            "company_name",
+            "types_of_entities",
+            "type_of_bbpou",
+            "address",
+            "phone_number",
+            "stamped_seal",
+            "authorized_signatory"
+          ],
+          "properties": {
+            "company_name": {
+              "type": "string",
+              "title": "Company Name",
+              "description": "Legal name of the company/entity."
+            },
+            "types_of_entities": {
+              "type": "string",
+              "enum": ["Bank", "Non-Bank"],
+              "title": "Types Of Entities",
+              "description": "Type of entity."
+            },
+            "type_of_bbpou": {
+              "type": "string",
+              "enum": [
+                "Customer BBPOU",
+                "Biller BBPOU",
+                "Both Customer and Biller BBPOU"
+              ],
+              "title": "Type Of Bbpou",
+              "description": "BBPOU participation type."
+            },
+            "address": {
+              "type": "string",
+              "title": "Address",
+              "description": "Registered or official address of the entity."
+            },
+            "phone_number": {
+              "type": "string",
+              "title": "Phone Number",
+              "description": "Contact phone number; kept as string to preserve formatting."
+            },
+            "stamped_seal": {
+              "type": "string",
+              "enum": ["Yes", "No"],
+              "title": "Stamped Seal",
+              "description": "Whether a stamped seal is present."
+            },
+            "seal_description": {
+              "anyOf": [
+                { "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Seal Description",
+              "description": "Seal details if stamped_seal is 'Yes'; otherwise null."
+            },
+            "authorized_signatory": {
+              "type": "string",
+              "enum": ["Yes", "No"],
+              "title": "Authorized Signatory",
+              "description": "Whether an authorized signatory is present."
+            },
+            "signatory_name": {
+              "anyOf": [
+                { "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Signatory Name"
+            },
+            "signatory_designation": {
+              "anyOf": [
+                { "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Signatory Designation"
+            },
+            "date_of_authorization": {
+              "anyOf": [
+                { "type": "string", "format": "date" },
+                { "type": "string", "const": "date is not mentioned" }
+              ],
+              "title": "Date Of Authorization",
+              "default": "date is not mentioned"
+            }
+          }
+        },
+        "ValidateBBPouRequest": {
+          "type": "object",
+          "title": "ValidateBBPouRequest",
+          "required": ["document_path"],
+          "properties": {
+            "document_path": {
+              "type": "string",
+              "title": "Document Path",
+              "description": "Absolute or relative path to the BBPOU participation PDF document."
+            }
+          }
+        },
+        "HTTPValidationError": {
+          "type": "object",
+          "title": "HTTPValidationError",
+          "properties": {
+            "detail": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ValidationError"
+              }
+            }
+          }
+        },
+        "ValidationError": {
+          "type": "object",
+          "title": "ValidationError",
+          "required": ["loc", "msg", "type"],
+          "properties": {
+            "loc": {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  { "type": "string" },
+                  { "type": "integer" }
+                ]
+              }
+            },
+            "msg": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "input": {},
+            "ctx": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    }
+  }
