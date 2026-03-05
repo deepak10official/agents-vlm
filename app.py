@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from agents.bbpou_participation import BBPouParticipation, agent, validate_document
+from agents.gst_certificate import GstCertificateDetails, agent as gst_agent, validate_document as validate_gst_document
 
 
 app = FastAPI(
@@ -16,6 +17,12 @@ app = FastAPI(
 class ValidateBBPouRequest(BaseModel):
     document_path: str = Field(
         description="Absolute or relative path to the BBPOU participation PDF document."
+    )
+
+
+class ValidateGstCertificateRequest(BaseModel):
+    document_path: str = Field(
+        description="Absolute or relative path to the GST certificate PDF document."
     )
 
 
@@ -40,6 +47,29 @@ def validate_bbpou_participation(payload: ValidateBBPouRequest) -> BBPouParticip
 
     try:
         return validate_document(agent, path)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Validation failed: {exc}",
+        ) from exc
+
+
+@app.post("/agents/gst-certificate/validate", response_model=GstCertificateDetails)
+def validate_gst_certificate(payload: ValidateGstCertificateRequest) -> GstCertificateDetails:
+    path = Path(payload.document_path)
+    if not path.exists():
+        raise HTTPException(
+            status_code=400,
+            detail=f"Document not found at path: {payload.document_path}",
+        )
+    if path.suffix.lower() != ".pdf":
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF files are supported for this endpoint.",
+        )
+
+    try:
+        return validate_gst_document(gst_agent, path)
     except Exception as exc:
         raise HTTPException(
             status_code=500,

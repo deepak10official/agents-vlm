@@ -10,6 +10,7 @@ import os
 
 
 from models.gemini import model
+#from models.ollama import model
 #from models.groq import model
 from utils.pdf_to_image import pdf_to_base64_image_parts
 
