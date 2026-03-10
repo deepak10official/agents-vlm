@@ -20,9 +20,9 @@ langfuse = get_client()
 langfuse_handler = CallbackHandler()
 
 
-class LetterFromSponsorBankDetails(BaseModel):
+class NdcLetterDetails(BaseModel):
     bank_name: str = Field(
-        description="Name of the bank issuing the letter (sponsor bank)."
+        description="Name of the bank issuing the letter."
     )
     bank_address: str = Field(
         description="Address of the bank as stated in the letter."
@@ -36,54 +36,54 @@ class LetterFromSponsorBankDetails(BaseModel):
     name_of_signer: str = Field(
         description="Name of the person who signed the letter."
     )
-    sponsor_agreement_confirmation_present: Literal["Yes", "No"] = Field(
-        description='Whether the letter contains a confirmation that the bank has agreed to become the sponsor (e.g. "have agreed to become the sponsor bank"). Allowed values: "Yes" or "No".'
+    net_cap_settlement_amount: str = Field(
+        description="Net cap settlement amount as stated in the letter (e.g. currency and figure as written)."
     )
-    confirmation_message: Optional[str] = Field(
+    net_cap_settlement_statement: Optional[str] = Field(
         default=None,
-        description="When sponsor_agreement_confirmation_present is Yes, the exact confirmation wording from the letter; otherwise null.",
+        description="The exact statement from the letter regarding net cap settlement amount (verbatim). If not found, use null.",
     )
 
 
-LETTER_FROM_SPONSOR_BANK_SYSTEM_PROMPT = """You are an expert document analyst specializing in bank letters and sponsor bank correspondence.
+NDC_LETTER_SYSTEM_PROMPT = """You are an expert document analyst specializing in NDC (Net Debit Cap) letters and sponsor bank letters.
 
 Your task is to extract structured information from the provided document image(s) and return it in the exact schema required.
 
 ## Document context
-- The document is typically a letter from a sponsor bank, confirming the bank's role or agreement (e.g. to become the sponsor bank for an entity).
-- It may contain the bank's letterhead, address, signatory details, and a confirmation statement.
+- The document is typically an NDC letter or sponsor bank letter (e.g. sponsor letter PDF) containing bank details, signatory information, and net cap / settlement amount details.
+- It may contain the bank's letterhead, address, signatory name and designation, and statements about net cap settlement amount.
 
 ## Extraction rules
 
-1. **bank_name**: Extract the name of the bank issuing the letter (the sponsor bank).
+1. **bank_name**: Extract the name of the bank issuing the letter.
 
 2. **bank_address**: Extract the full address of the bank as stated in the letter.
 
 3. **signature**: Answer "Yes" if a signature is visible or stated on the letter; otherwise "No".
 
-4. **designation_of_signer**: Extract the designation or title of the person who signed (e.g. Authorized Signatory, Manager, Chief Manager). If no signatory is indicated, use an empty string or "not stated".
+4. **designation_of_signer**: Extract the designation or title of the person who signed (e.g. Authorized Signatory, Manager, Chief Manager). If no signatory is indicated, use "not stated" or empty string.
 
 5. **name_of_signer**: Extract the name of the person who signed the letter. If not stated, use "not stated" or empty string.
 
-6. **sponsor_agreement_confirmation_present**: Answer "Yes" if the letter contains a confirmation that the bank has agreed to become the sponsor (e.g. wording like "have agreed to become the sponsor bank" or similar); otherwise "No".
+6. **net_cap_settlement_amount**: Extract the net cap settlement amount as stated in the letter (e.g. the figure and currency exactly as written, e.g. "₹ X" or "INR X Lakhs").
 
-7. **confirmation_message**: When sponsor_agreement_confirmation_present is "Yes", extract the exact confirmation wording from the letter. Otherwise use null.
+7. **net_cap_settlement_statement**: Extract the exact statement from the letter that mentions the net cap settlement amount (verbatim, no paraphrasing). If no such statement is found, use null.
 
 ## Output requirements
 - Return only the extracted fields in the required schema. Do not add commentary.
-- Use the exact literal values "Yes" or "No" for signature and sponsor_agreement_confirmation_present.
-- For confirmation_message, use the exact wording from the document when applicable.
+- Use the exact literal values "Yes" or "No" for signature.
+- For net_cap_settlement_statement, use the exact wording from the document when present.
 """
 
 
 agent = create_agent(
     model=model,
-    response_format=LetterFromSponsorBankDetails,
-    system_prompt=LETTER_FROM_SPONSOR_BANK_SYSTEM_PROMPT,
+    response_format=NdcLetterDetails,
+    system_prompt=NDC_LETTER_SYSTEM_PROMPT,
 )
 
 
-def validate_document(agent: Any, document_path: str | Path) -> LetterFromSponsorBankDetails:
+def validate_document(agent: Any, document_path: str | Path) -> NdcLetterDetails:
     image_parts = pdf_to_base64_image_parts(document_path)
 
     result = agent.invoke(
@@ -95,7 +95,7 @@ def validate_document(agent: Any, document_path: str | Path) -> LetterFromSponso
                         {
                             "type": "text",
                             "text": (
-                                "Extract letter from sponsor bank details from this document "
+                                "Extract NDC letter details from this sponsor letter PDF "
                                 "and return the structured response."
                             ),
                         },
@@ -108,7 +108,7 @@ def validate_document(agent: Any, document_path: str | Path) -> LetterFromSponso
             "callbacks": [langfuse_handler],
             "metadata": {
                 "document_path": str(document_path),
-                "agent_type": "letter_from_sponsor_bank",
+                "agent_type": "ndc_letter",
             },
             "tags": ["vlm", "pdf-validation"],
         },
